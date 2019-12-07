@@ -44,16 +44,27 @@ MIFAREReader = MFRC522.MFRC522()
 print("Welcome to the MFRC522 data read example")
 print("Press Ctrl-C to stop.")
 
+
+POTENTIAL_KEYS=[
+    [0xFF,0xFF,0xFF,0xFF,0xFF,0xFF],
+    [0xA0,0xA1,0xA2,0xA3,0xA4,0xA5],
+    [0xB0,0xB1,0xB2,0xB3,0xB4,0xB5],
+    [0x4D,0x3A,0x99,0xC3,0x51,0xDD],
+    [0x1A,0x98,0x2C,0x7E,0x45,0x9A],
+    [0xD3,0xF7,0xD3,0xF7,0xD3,0xF7],
+    [0xAA,0xBB,0xCC,0xDD,0xEE,0xFF]
+
+]
 # This loop keeps checking for chips. If one is near it will get the UID and authenticate
 while continue_reading:
-    
-    # Scan for cards    
+
+    # Scan for cards
     (status,TagType) = MIFAREReader.MFRC522_Request(MIFAREReader.PICC_REQIDL)
 
     # If a card is found
     if status == MIFAREReader.MI_OK:
         print("Card detected")
-    
+
     # Get the UID of the card
     (status,uid) = MIFAREReader.MFRC522_Anticoll()
 
@@ -62,20 +73,26 @@ while continue_reading:
 
         # Print UID
         print("Card read UID: {},{},{},{}".format(uid[0], uid[1], uid[2], uid[3]))
-    
+
         # This is the default key for authentication
-        key = [0xFF,0xFF,0xFF,0xFF,0xFF,0xFF]
-        
+
         # Select the scanned tag
         MIFAREReader.MFRC522_SelectTag(uid)
 
-        # Authenticate
-        status = MIFAREReader.MFRC522_Auth(MIFAREReader.PICC_AUTHENT1A, 8, key, uid)
+        key = []
+        tries = 1
+        for key in POTENTIAL_KEYS:
+            # Authenticate
+            status = MIFAREReader.MFRC522_Auth(MIFAREReader.PICC_AUTHENT1A, 8, key, uid)
 
-        # Check if authenticated
-        if status == MIFAREReader.MI_OK:
-            MIFAREReader.MFRC522_Read(8)
-            MIFAREReader.MFRC522_StopCrypto1()
-        else:
-            print("Authentication error")
+            # Check if authenticated
+            if status == MIFAREReader.MI_OK:
+                MIFAREReader.MFRC522_Read(8)
+                MIFAREReader.MFRC522_StopCrypto1()
+                break
+            else:
+                if tries == len(POTENTIAL_KEYS):
+                    print("Authentication error")
+                continue
+
 
